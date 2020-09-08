@@ -435,33 +435,33 @@ def check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
 		return HttpResponseBadRequest("You may not cancel reservations that have already ended.")
 
 	if reservation.cancelled:
-		return HttpResponseBadRequest("This reservation was missed and cannot be modified.")
+		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation.cancelled_by) + " at " + format_datetime(reservation.cancellation_time) + ".")
 
 	return HttpResponse()
 
-	def check_policy_to_confirm_reservation(reservation, user_confirming_reservation):
-		"""
-        Checks the reservation confirmation policy.
-        If all checks pass the function returns an HTTP "OK" response.
-        Otherwise, the function returns an HTTP "Bad Request" with an error message.
-        """
+def check_policy_to_confirm_reservation(reservation, user_confirming_reservation):
+	"""
+	Checks the reservation confirmation policy.
+	If all checks pass the function returns an HTTP "OK" response.
+	Otherwise, the function returns an HTTP "Bad Request" with an error message.
+	"""
 
-		# Only superusers may confirm reservations.
-		if not user_confirming_reservation.is_superuser:
-			return HttpResponseBadRequest("You do no not have the necessary privileges to confirm a reservation.")
+	# Only superusers may confirm reservations.
+	if not user_confirming_reservation.is_superuser:
+		return HttpResponseBadRequest("You do no not have the necessary privileges to confirm a reservation.")
 
-		# Users may not confirm reservations that have already ended.
-		if reservation.end < timezone.now():
-			return HttpResponseBadRequest("You may not confirm reservations that have already ended.")
+	# Users may not confirm reservations that have already ended.
+	if reservation.end < timezone.now():
+		return HttpResponseBadRequest("You may not confirm reservations that have already ended.")
 
-		if reservation.confirmed:
-			return HttpResponseBadRequest("This reservation has already been confirmed " + str(reservation.confirmed_by) + format_datetime(reservation.confirmed_time) + ".")
-
-		if reservation.missed:
-			return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation.cancelled_by) + " at " + format_datetime(reservation.cancellation_time) + ".")
+	if reservation.confirmed:
+		return HttpResponseBadRequest("This reservation has already been confirmed " + str(reservation.confirmed_by) + format_datetime(reservation.confirmed_time) + ".")
 
 	if reservation.missed:
 		return HttpResponseBadRequest("This reservation was missed and cannot be modified.")
+
+	if reservation.cancelled:
+		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation.cancelled_by) + " at " + format_datetime(reservation.cancellation_time) + ".")
 
 	return HttpResponse()
 
