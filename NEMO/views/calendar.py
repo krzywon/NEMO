@@ -150,6 +150,15 @@ def reservation_event_feed(request, start, end):
 			elif item_type == ReservationItemType.AREA:
 				outages = Area.objects.get(pk=item_id).scheduled_outage_queryset()
 
+	# A simple interface to differentiate confirmed appointments versus unconfirmed appointments
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	if use_confirmation_system:
+		# Create separate list of events that are unconfirmed
+		desired_events = events.filter(confirmed=False)
+		# Exclude events from reservation list that aren't confirmed
+		events = events.exclude(confirmed=False)
+	else:
+		desired_events = Reservation.objects.none()
 	# Exclude outages for which the following is true:
 	# The outage starts and ends before the time-window, and...
 	# The outage starts and ends after the time-window.
@@ -163,6 +172,7 @@ def reservation_event_feed(request, start, end):
 
 	dictionary = {
 		'events': events,
+		'desired_events': desired_events,
 		'outages': outages,
 		'personal_schedule': personal_schedule,
 	}
@@ -232,6 +242,16 @@ def specific_user_feed(request, user, start, end):
 	reservations = reservations.exclude(start__lt=start, end__lt=start)
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
 
+	# Find all unconfirmed reservations for the user that were not missed or cancelled.
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	if use_confirmation_system:
+		# Create separate list of events that are unconfirmed
+		desired_events = reservations.filter(confirmed=False)
+		# Exclude events from reservation list that aren't confirmed
+		reservations = reservations.exclude(confirmed=False)
+	else:
+		desired_events = Reservation.objects.none()
+
 	# Find all missed reservations for the user.
 	missed_reservations = Reservation.objects.filter(user=user, missed=True)
 	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
@@ -241,6 +261,7 @@ def specific_user_feed(request, user, start, end):
 		'usage_events': usage_events,
 		'area_access_events': area_access_events,
 		'reservations': reservations,
+		'desired_events': desired_events,
 		'missed_reservations': missed_reservations,
 	}
 	return render(request, 'calendar/specific_user_feed.html', dictionary)

@@ -50,6 +50,7 @@ customizable_key_values = {
 	'calendar_month_column_format': 'ddd',
 	'calendar_start_of_the_day': '07:00:00',
 	'calendar_display_not_qualified_areas': '',
+	'reservations_require_confirmation': '',
 }
 
 customizable_content = [
