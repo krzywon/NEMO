@@ -22,7 +22,7 @@ from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccess
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_confirm_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations
 
 calendar_logger = getLogger(__name__)
 
@@ -633,6 +633,22 @@ def cancel_reservation(request, reservation_id):
 			return render(request, 'mobile/error.html', {'message': response.content})
 
 
+@login_required
+@require_POST
+def confirm_reservation(request, reservation_id):
+	""" Confirm a reservation for a user. """
+	reservation = get_object_or_404(Reservation, id=reservation_id)
+	response = confirm_the_reservation(reservation=reservation, user_confirming_reservation=request.user)
+
+	if request.device == 'desktop':
+		return response
+	if request.device == 'mobile':
+		if response.status_code == HTTPStatus.OK:
+			return render(request, 'mobile/confirmation_result.html', {'event_type': 'Reservation', 'tool': reservation.tool})
+		else:
+			return render(request, 'mobile/error.html', {'message': response.content})
+
+
 @staff_member_required(login_url=None)
 @require_POST
 def cancel_outage(request, outage_id):
@@ -762,7 +778,8 @@ def reservation_details(request, reservation_id):
 		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
 		return HttpResponseNotFound(error_message)
 	reservation_project_can_be_changed = (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended and reservation.has_not_started and reservation.user.active_project_count() > 1
-	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed})
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed, 'use_confirmation_system': use_confirmation_system})
 
 
 @login_required
@@ -911,6 +928,19 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 			current_reservation.save()
 	except Reservation.DoesNotExist:
 		pass
+
+
+def confirm_the_reservation(reservation: Reservation, user_confirming_reservation: User):
+	response = check_policy_to_confirm_reservation(reservation, user_confirming_reservation)
+
+	if response.status_code == HTTPStatus.OK:
+		# All policy checks passed, so confirm the reservation.
+		reservation.confirmed = True
+		reservation.confirmed_time = timezone.now()
+		reservation.confirmed_by = user_confirming_reservation
+		reservation.save()
+
+	return response
 
 
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):

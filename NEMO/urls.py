@@ -80,6 +80,7 @@ urlpatterns = [
 	url(r'^move_reservation/$', calendar.move_reservation, name='move_reservation'),
 	url(r'^move_outage/$', calendar.move_outage, name='move_outage'),
 	url(r'^cancel_reservation/(?P<reservation_id>\d+)/$', calendar.cancel_reservation, name='cancel_reservation'),
+	url(r'^confirm_reservation/(?P<reservation_id>\d+)/$', calendar.confirm_reservation, name='confirm_reservation'),
 	url(r'^cancel_outage/(?P<outage_id>\d+)/$', calendar.cancel_outage, name='cancel_outage'),
 	url(r'^set_reservation_title/(?P<reservation_id>\d+)/$', calendar.set_reservation_title, name='set_reservation_title'),
 	url(r'^change_reservation_project/(?P<reservation_id>\d+)/$', calendar.change_reservation_project, name='change_reservation_project'),

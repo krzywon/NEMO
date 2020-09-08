@@ -66,6 +66,18 @@
 		{{ reservation.additional_information|linebreaksbr }}
 	{% endif %}
 </div>
+{# Allow a user to confirm the reservation if they have that privilege. #}
+{% if use_confirmation_system %}
+	{% if reservation.confirmed %}
+		<div class="modal-footer">Confirmed on {{ reservation.confirmed_time }} by {{ reservation.confirmed_by }}</div>
+	{% elif not reservation.confirmed and user.is_superuser %}
+	<div class="modal-footer">
+		<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { confirm_reservation('{% url 'confirm_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') })">Confirm this reservation</button>
+	</div>
+	{% else %}
+		<div class="modal-footer">This reservation is awaiting confirmation.</div>
+	{% endif %}
+{% endif %}
 {# Allow the user to cancel the reservation if they have that priviledge. #}
 {% if not reservation.missed and not reservation.cancelled %}
 	{% if reservation.user.id == user.id and reservation.has_not_ended or user.is_staff %}
