@@ -938,6 +938,7 @@ def confirm_the_reservation(reservation: Reservation, user_confirming_reservatio
 		reservation.confirmed = True
 		reservation.confirmed_time = timezone.now()
 		reservation.confirmed_by = user_confirming_reservation
+		send_confirmed_reservation_notification(reservation)
 		reservation.save()
 
 	return response
@@ -1024,6 +1025,23 @@ def send_user_created_reservation_notification(reservation: Reservation):
 			send_mail(subject, message, user_office_email, recipients, [attachment])
 		else:
 			calendar_logger.error("User created reservation notification could not be send because user_office_email_address is not defined")
+
+
+def send_confirmed_reservation_notification(reservation: Reservation):
+	site_title = get_customization('site_title')
+	recipients = [reservation.user.email]
+	if recipients:
+		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
+		message = get_media_file_contents('reservation_confirmed_user_email.html')
+		message = Template(message).render(Context({'reservation': reservation}))
+		user_office_email = get_customization('user_office_email_address')
+		# We don't need to check for existence of reservation_confirmed_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
+		if user_office_email:
+			attachment = []
+			if reservation.user.get_preferences().attach_created_reservation:
+				attachment.append(create_ics_for_reservation(reservation))
+			send_mail(subject, message, user_office_email, recipients, attachment)
+
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
