@@ -22,7 +22,7 @@ from NEMO.models import Tool, Reservation, Configuration, UsageEvent, AreaAccess
 from NEMO.utilities import bootstrap_primary_color, extract_times, extract_dates, format_datetime, parse_parameter_string, send_mail, create_email_attachment, localize
 from NEMO.views.constants import ADDITIONAL_INFORMATION_MAXIMUM_LENGTH
 from NEMO.views.customization import get_customization, get_media_file_contents
-from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations
+from NEMO.views.policy import check_policy_to_save_reservation, check_policy_to_cancel_reservation, check_policy_to_confirm_reservation, check_policy_to_create_outage, maximum_users_in_overlapping_reservations
 
 calendar_logger = getLogger(__name__)
 
@@ -150,6 +150,15 @@ def reservation_event_feed(request, start, end):
 			elif item_type == ReservationItemType.AREA:
 				outages = Area.objects.get(pk=item_id).scheduled_outage_queryset()
 
+	# A simple interface to differentiate confirmed appointments versus unconfirmed appointments
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	if use_confirmation_system:
+		# Create separate list of events that are unconfirmed
+		desired_events = events.filter(confirmed=False)
+		# Exclude events from reservation list that aren't confirmed
+		events = events.exclude(confirmed=False)
+	else:
+		desired_events = Reservation.objects.none()
 	# Exclude outages for which the following is true:
 	# The outage starts and ends before the time-window, and...
 	# The outage starts and ends after the time-window.
@@ -163,6 +172,7 @@ def reservation_event_feed(request, start, end):
 
 	dictionary = {
 		'events': events,
+		'desired_events': desired_events,
 		'outages': outages,
 		'personal_schedule': personal_schedule,
 	}
@@ -232,6 +242,16 @@ def specific_user_feed(request, user, start, end):
 	reservations = reservations.exclude(start__lt=start, end__lt=start)
 	reservations = reservations.exclude(start__gt=end, end__gt=end)
 
+	# Find all unconfirmed reservations for the user that were not missed or cancelled.
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	if use_confirmation_system:
+		# Create separate list of events that are unconfirmed
+		desired_events = reservations.filter(confirmed=False)
+		# Exclude events from reservation list that aren't confirmed
+		reservations = reservations.exclude(confirmed=False)
+	else:
+		desired_events = Reservation.objects.none()
+
 	# Find all missed reservations for the user.
 	missed_reservations = Reservation.objects.filter(user=user, missed=True)
 	missed_reservations = missed_reservations.exclude(start__lt=start, end__lt=start)
@@ -241,6 +261,7 @@ def specific_user_feed(request, user, start, end):
 		'usage_events': usage_events,
 		'area_access_events': area_access_events,
 		'reservations': reservations,
+		'desired_events': desired_events,
 		'missed_reservations': missed_reservations,
 	}
 	return render(request, 'calendar/specific_user_feed.html', dictionary)
@@ -612,6 +633,22 @@ def cancel_reservation(request, reservation_id):
 			return render(request, 'mobile/error.html', {'message': response.content})
 
 
+@login_required
+@require_POST
+def confirm_reservation(request, reservation_id):
+	""" Confirm a reservation for a user. """
+	reservation = get_object_or_404(Reservation, id=reservation_id)
+	response = confirm_the_reservation(reservation=reservation, user_confirming_reservation=request.user)
+
+	if request.device == 'desktop':
+		return response
+	if request.device == 'mobile':
+		if response.status_code == HTTPStatus.OK:
+			return render(request, 'mobile/confirmation_result.html', {'event_type': 'Reservation', 'tool': reservation.tool})
+		else:
+			return render(request, 'mobile/error.html', {'message': response.content})
+
+
 @staff_member_required(login_url=None)
 @require_POST
 def cancel_outage(request, outage_id):
@@ -741,7 +778,8 @@ def reservation_details(request, reservation_id):
 		error_message = 'This reservation was cancelled by {0} at {1}.'.format(reservation.cancelled_by, format_datetime(reservation.cancellation_time))
 		return HttpResponseNotFound(error_message)
 	reservation_project_can_be_changed = (request.user.is_staff or request.user == reservation.user) and reservation.has_not_ended and reservation.has_not_started and reservation.user.active_project_count() > 1
-	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed})
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	return render(request, 'calendar/reservation_details.html', {'reservation': reservation, 'reservation_project_can_be_changed': reservation_project_can_be_changed, 'use_confirmation_system': use_confirmation_system})
 
 
 @login_required
@@ -894,6 +932,20 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 		pass
 
 
+def confirm_the_reservation(reservation: Reservation, user_confirming_reservation: User):
+	response = check_policy_to_confirm_reservation(reservation, user_confirming_reservation)
+
+	if response.status_code == HTTPStatus.OK:
+		# All policy checks passed, so confirm the reservation.
+		reservation.confirmed = True
+		reservation.confirmed_time = timezone.now()
+		reservation.confirmed_by = user_confirming_reservation
+		send_confirmed_reservation_notification(reservation)
+		reservation.save()
+
+	return response
+
+
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):
 	response = check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
 	# Staff must provide a reason when cancelling a reservation they do not own.
@@ -975,6 +1027,23 @@ def send_user_created_reservation_notification(reservation: Reservation):
 			send_mail(subject, message, user_office_email, recipients, [attachment])
 		else:
 			calendar_logger.error("User created reservation notification could not be send because user_office_email_address is not defined")
+
+
+def send_confirmed_reservation_notification(reservation: Reservation):
+	site_title = get_customization('site_title')
+	recipients = [reservation.user.email]
+	if recipients:
+		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
+		message = get_media_file_contents('reservation_confirmed_user_email.html')
+		message = Template(message).render(Context({'reservation': reservation}))
+		user_office_email = get_customization('user_office_email_address')
+		# We don't need to check for existence of reservation_confirmed_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
+		if user_office_email:
+			attachment = []
+			if reservation.user.get_preferences().attach_created_reservation:
+				attachment.append(create_ics_for_reservation(reservation))
+			send_mail(subject, message, user_office_email, recipients, attachment)
+
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):

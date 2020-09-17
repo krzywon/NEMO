@@ -286,6 +286,15 @@ function details(event, jsEvent, view)
 	ajax_get(event.details_url, undefined, ajax_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
 }
 
+function confirm_reservation(url, reservation_id) {
+    var failure_dialog = ajax_failure_callback("Unable to confirm this reservation");
+    function reservation_confirm_success_callback() {
+		$("#calendar").fullCalendar("removeEvents", reservation_id);
+        refresh_calendar_and_sidebar();
+    }
+	ajax_post(url, undefined, reservation_confirm_success_callback, [failure_dialog, refresh_calendar_and_sidebar]);
+}
+
 function cancel_reservation(url, reservation_id, reason)
 {
 	var failure_dialog = ajax_failure_callback("Unable to cancel this reservation");

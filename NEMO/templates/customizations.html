@@ -847,6 +847,39 @@
 
 		<div class="panel panel-default">
 			<div class="panel-body">
+				<h3>User reservation confirmed email</h3>
+				<p>
+					This email is sent to the user when a reservation has been confirmed. This is only used if the reservations_require_confirmation is set to enabled.
+					<br>This is optional, the email will still be sent with only the calendar attachment if this is left blank.
+				    <br><br>The following context variables are provided when the email is rendered:
+				</p>
+				<ul>
+					<li><b>reservation</b> - the user's reservation that was confirmed</li>
+				</ul>
+				<form method="POST" action="{% url 'customize' 'reservation_confirmed_user_email' %}" enctype="multipart/form-data" onsubmit="return check_delete_file_before_submit('reservation_confirmed_user_email')">
+					{% csrf_token %}
+					<div class="form-group">
+						<input type="file" name="reservation_confirmed_user_email" class="customization-input-file" onchange="this.style.color = 'inherit';$('#reservation_confirmed_user_email').hide()">
+						{% if reservation_confirmed_user_email %}<a id="reservation_confirmed_user_email_span" href="data:text/html,{{ reservation_confirmed_user_email|urlencode }}" download="reservation_confirmed_user_email.html" target="_blank">reservation_confirmed_user_email.html</a>{% endif %}
+					</div>
+					<div class="form-group">
+						<input type="submit" value="Upload confirmed reservation email" class="btn btn-success">
+					</div>
+				</form>
+				{% if reservation_confirmed_user_email %}
+					<div class="customization-separation"></div>
+					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#reservation_confirmed_user_email_render">Show current content</button>
+					<table id="reservation_confirmed_user_email_render" class="collapse customization-content-email">
+						<tr>
+							<td>{{ reservation_confirmed_user_email|safe }}</td>
+						</tr>
+					</table>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
 				<h3 id="reservation_cancelled">User reservation cancelled email</h3>
 				<p>
 					This email is sent to a user when the user cancels his own reservation and has opted to receive ics calendar notification in his preferences.

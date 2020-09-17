@@ -465,3 +465,37 @@ class AreaReservationTestCase(TestCase):
 	def test_reservation_policy_off(self):
 		# TODO: create those tests
 		self.assertTrue(True)
+
+	def test_confirmation_system(self):
+		start = datetime.now() + timedelta(hours=1)
+		end = start + timedelta(hours=1)
+
+		# create reservation
+		new_reservation = Reservation.objects.create(
+			area=area, start=start - timedelta(days=1),
+			end=end - timedelta(days=1), user=consumer,
+			creator=consumer, short_notice=False)
+
+		# Check base confirmed values
+		self.assertTrue(hasattr(new_reservation, 'confirmed'))
+		self.assertTrue(hasattr(new_reservation, 'confirmed_by'))
+		self.assertTrue(hasattr(new_reservation, 'confirmed_time'))
+		self.assertFalse(new_reservation.confirmed)
+		# TODO: Check the actual values... null?
+		self.assertEqual(new_reservation.confirmed_by, None)
+		self.assertEqual(new_reservation.confirmed_time, None)
+
+		# Attempt to confirm a reservation as a regular user - fail gracefully
+		login_as(self.client, consumer)
+		self.assertFalse(consumer.is_superuser)
+		response = self.client.post(reverse('confirm_reservation', kwargs={'reservation_id': new_reservation.id}), {}, follow=True)
+		self.assertContains(response, "You do no not have the necessary privileges to confirm a reservation.", status_code=405)
+		self.assertFalse(new_reservation.confirmed)
+
+		login_as(self.client, staff)
+		staff.is_superuser = True
+		response = self.client.post(reverse('confirm_reservation', kwargs={'reservation_id': new_reservation.id}), {}, follow=True)
+		self.assertEquals(response.status_code, 200)
+		self.assertTrue(new_reservation.confirmed)
+		self.assertTrue(datetime.now() > new_reservation.confirmed_time)
+		self.assertEqual(staff, new_reservation.confirmed_by)
