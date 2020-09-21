@@ -13,6 +13,9 @@
 				<div class="checkbox">
 					<label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when cancelling a reservation</label>
 				</div>
+				<div class="checkbox">
+					<label><input name="attach_confirmed_reservation" type="checkbox" {% if user_preferences.attach_confirmed_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when a reservation is confirmed</label>
+				</div>
 			</div>
 			<input type="submit" value="Update" class="btn btn-info">
 		</form>

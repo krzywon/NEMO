@@ -78,6 +78,7 @@ class CalendarDisplay(models.Model):
 class UserPreferences(models.Model):
 	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
 	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
+	attach_confirmed_reservation = models.BooleanField('confirmed_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when a reservation is confirmed')
 
 	class Meta:
 		verbose_name = 'User preferences'
