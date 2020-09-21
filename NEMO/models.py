@@ -1051,7 +1051,7 @@ class Reservation(CalendarDisplay):
 	additional_information = models.TextField(null=True, blank=True)
 	self_configuration = models.BooleanField(default=False, help_text="When checked, indicates that the user will perform their own tool configuration (instead of requesting that the staff configure it for them).")
 	title = models.TextField(default='', blank=True, max_length=200, help_text="Shows a custom title for this reservation on the calendar. Leave this field blank to display the reservation's user name as the title (which is the default behaviour).")
-	confirmed = models.BooleanField(default=False, help_text="When checked, the reservation has been confirmed by an admin of the area/tool/etc.")
+	confirmed = models.BooleanField(default=True, help_text="When checked, the reservation has been confirmed by an admin of the area/tool/etc.")
 	confirmed_time = models.DateTimeField(null=True, blank=True)
 	confirmed_by = models.ForeignKey(User, null=True, blank=True, related_name="reservation_confirmer", on_delete=models.SET_NULL)
 

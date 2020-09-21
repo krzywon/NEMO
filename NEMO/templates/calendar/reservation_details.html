@@ -69,7 +69,14 @@
 {# Allow a user to confirm the reservation if they have that privilege. #}
 {% if use_confirmation_system %}
 	{% if reservation.confirmed %}
-		<div class="modal-footer">Confirmed on {{ reservation.confirmed_time }} by {{ reservation.confirmed_by }}</div>
+		<div class="modal-footer">Confirmed
+			{% if reservation.confirmed_time %}
+				&nbsp;on {{ reservation.confirmed_time }}
+			{% endif %}
+			{% if reservation.confirmed_by %}
+				&nbsp;by {{ reservation.confirmed_by }}
+			{% endif %}
+		</div>
 	{% elif not reservation.confirmed and user.is_superuser %}
 	<div class="modal-footer">
 		<button type="button" class="btn btn-danger" data-dismiss="modal" onclick="$('#dialog').one('hidden.bs.modal', function() { confirm_reservation('{% url 'confirm_reservation' reservation.id %}', 'Reservation {{ reservation.id }}') })">Confirm this reservation</button>

@@ -302,6 +302,8 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 	setattr(new_reservation, item_type.value, item)
 	new_reservation.start = start
 	new_reservation.end = end
+	if hasattr(new_reservation, 'confirmed'):
+		new_reservation.confirmed = not get_customization('reservations_require_confirmation') == 'enabled'
 	new_reservation.short_notice = determine_insufficient_notice(item, start) if item_type == ReservationItemType.TOOL else False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 
@@ -1031,7 +1033,7 @@ def send_user_created_reservation_notification(reservation: Reservation):
 
 def send_confirmed_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
-	recipients = [reservation.user.email]
+	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
 	if recipients:
 		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_confirmed_user_email.html')
@@ -1039,11 +1041,8 @@ def send_confirmed_reservation_notification(reservation: Reservation):
 		user_office_email = get_customization('user_office_email_address')
 		# We don't need to check for existence of reservation_confirmed_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = []
-			if reservation.user.get_preferences().attach_created_reservation:
-				attachment.append(create_ics_for_reservation(reservation))
-			send_mail(subject, message, user_office_email, recipients, attachment)
-
+			attachment = create_ics_for_reservation(reservation, cancelled=True)
+			send_mail(subject, message, user_office_email, recipients, [attachment])
 
 
 def send_user_cancelled_reservation_notification(reservation: Reservation):
