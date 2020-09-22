@@ -70,10 +70,10 @@
 {% if use_confirmation_system %}
 	{% if reservation.confirmed %}
 		<div class="modal-footer">Confirmed
-			{% if reservation.confirmed_time != 'null' and reservation.confirmed_time != '' %}
+			{% if reservation.confirmed_time %}
 				&nbsp;on {{ reservation.confirmed_time }}
 			{% endif %}
-			{% if reservation.confirmed_by != 'null' and reservation.confirmed_by != '' %}
+			{% if reservation.confirmed_by %}
 				&nbsp;by {{ reservation.confirmed_by }}
 			{% endif %}
 		</div>
