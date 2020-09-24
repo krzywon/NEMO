@@ -169,6 +169,7 @@ def reservation_event_feed(request, start, end):
 	personal_schedule = request.GET.get('personal_schedule')
 	if personal_schedule:
 		events = events.filter(user=request.user)
+		desired_events = desired_events.filter(user=request.user)
 
 	dictionary = {
 		'events': events,
@@ -578,6 +579,9 @@ def modify_reservation(request, start_delta, end_delta):
 	new_reservation.project = reservation_to_cancel.project
 	new_reservation.user = reservation_to_cancel.user
 	new_reservation.creation_time = now
+	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
+	if use_confirmation_system:
+		new_reservation.confirmed = False
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 	if policy_problems:
 		reservation_action = "resize" if start_delta is None else "move"
