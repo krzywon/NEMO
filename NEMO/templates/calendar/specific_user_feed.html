@@ -35,7 +35,7 @@
 	{
 		"title": "Request for the {{ x.reservation_item.name }}{% if x.title %}, titled \"{{ x.title }}\"{% endif %}",
 		"id": {{ x.id }},
-		"color": {% if x.tool %}"#3a87ad"{% elif x.area %}"#E9967A"{% endif %},
+		"color": {% if x.tool %}"#FA8072"{% elif x.area %}"#E9967A"{% endif %},
 		"start": "{{ x.start|date:"c" }}",
 		"end": "{{ x.get_visual_end|date:"c" }}",
 		"details_url": "{% url 'reservation_details' x.id %}"
