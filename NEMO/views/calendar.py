@@ -1038,6 +1038,8 @@ def send_user_created_reservation_notification(reservation: Reservation):
 def send_confirmed_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
 	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_confirmed_reservation else []
+	if reservation.area:
+		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
 		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_confirmed_user_email.html')
@@ -1052,8 +1054,6 @@ def send_confirmed_reservation_notification(reservation: Reservation):
 def send_user_cancelled_reservation_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
 	recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
-	if reservation.area:
-		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
 		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
