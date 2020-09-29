@@ -331,7 +331,7 @@ def create_item_reservation(request, start, end, item_type: ReservationItemType,
 
 	elif item_type == ReservationItemType.AREA:
 		new_reservation.save_and_notify()
-		return HttpResponse()
+		return reservation_success(request, new_reservation)
 
 	return HttpResponseBadRequest("Reservation creation failed because invalid parameters were sent to the server.")
 
