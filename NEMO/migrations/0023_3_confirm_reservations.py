@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0023_1_confirm_reservations'),
+        ('NEMO', '0023_2_confirm_reservations'),
     ]
 
     operations = [
