@@ -254,7 +254,7 @@
 				{% if facility_rules_tutorial %}
 					<div class="customization-separation"></div>
 					<button type="button" class="btn btn-info" data-toggle="collapse" data-target="#facility_rules_tutorial_render">Show current content</button>
-					<div id="facility_rules_tutorial_render" class="collapse customization-content">{{ facility_rules_tutorial }}</div>
+					<div id="facility_rules_tutorial_render" class="collapse customization-content">{{ facility_rules_tutorial|safe }}</div>
 				{% endif %}
 			</div>
 		</div>
