@@ -1045,7 +1045,7 @@ class Reservation(CalendarDisplay):
 	short_notice = models.BooleanField(default=None, help_text="Indicates that the reservation was made after the configuration deadline for a tool. Staff may not have enough time to properly configure the tool before the user is scheduled to use it.")
 	cancelled = models.BooleanField(default=False, help_text="Indicates that the reservation has been cancelled, moved, or resized.")
 	cancellation_time = models.DateTimeField(null=True, blank=True)
-	cancellation_reason = models.TextField(default='', blank=True, max_length=200, help_text="Shows the reason the reservation was cancelled.")
+	cancellation_reason = models.TextField(default='', null=True, blank=True, max_length=200, help_text="Shows the reason the reservation was cancelled.")
 	cancelled_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
 	missed = models.BooleanField(default=False, help_text="Indicates that the tool was not enabled by anyone before the tool's \"missed reservation threshold\" passed.")
 	shortened = models.BooleanField(default=False, help_text="Indicates that the user finished using the tool and relinquished the remaining time on their reservation. The reservation will no longer be visible on the calendar and a descendant reservation will be created in place of the existing one.")

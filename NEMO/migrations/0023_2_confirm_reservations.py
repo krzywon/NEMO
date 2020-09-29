@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='reservation',
             name='cancellation_reason',
-            field=models.BooleanField(default=True, help_text='When checked, the reservation has been confirmed by an admin of the area/tool/etc.'),
+            field=models.TextField(default='', null=True, blank=True, max_length=200, help_text="Shows the reason the reservation was cancelled."),
         ),
     ]
