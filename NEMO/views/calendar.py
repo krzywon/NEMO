@@ -999,6 +999,16 @@ def send_user_reservation_change_notification(reservation: Reservation):
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
+		# Infer reason for the email
+		if reservation.cancelled:
+			subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
+			message = get_media_file_contents('reservation_cancelled_user_email.html')
+		elif reservation.confirmed:
+			subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
+			message = get_media_file_contents('reservation_confirmed_user_email.html')
+		else:
+			subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
+			message = get_media_file_contents('reservation_created_user_email.html')
 		message = Template(message).render(Context({'reservation': reservation}))
 		user_office_email = get_customization('user_office_email_address')
 		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
