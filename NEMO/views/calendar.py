@@ -995,8 +995,10 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 
 def send_user_reservation_change_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
+	cancelled = False
 	# Infer reason for the email
 	if reservation.cancelled:
+		cancelled = True
 		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
@@ -1005,7 +1007,7 @@ def send_user_reservation_change_notification(reservation: Reservation):
 		message = get_media_file_contents('reservation_confirmed_user_email.html')
 		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_confirmed_reservation else []
 	else:
-		subject = f"[{site_title}] Reservation for the " + str(reservation.reservation_item)
+		subject = f"[{site_title}] Reservation Requested for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
 	if reservation.area:
@@ -1013,12 +1015,12 @@ def send_user_reservation_change_notification(reservation: Reservation):
 	if recipients:
 		message = Template(message).render(Context({'reservation': reservation}))
 		user_office_email = get_customization('user_office_email_address')
-		# We don't need to check for existence of reservation_cancelled_user_email because we are attaching the ics reservation and sending the email regardless (message will be blank)
+		# We don't need to verify the existence of a template because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = create_ics_for_reservation(reservation, cancelled=True)
+			attachment = create_ics_for_reservation(reservation, cancelled=cancelled)
 			send_mail(subject, message, user_office_email, recipients, [attachment])
 		else:
-			calendar_logger.error("User cancelled reservation notification could not be send because user_office_email_address is not defined")
+			calendar_logger.error("User reservation notification could not be sent because user_office_email_address is not defined")
 
 
 def create_ics_for_reservation(reservation: Reservation, cancelled=False):
