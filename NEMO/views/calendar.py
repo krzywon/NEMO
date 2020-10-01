@@ -1009,7 +1009,7 @@ def send_user_reservation_change_notification(reservation: Reservation):
 	else:
 		subject = f"[{site_title}] Reservation Requested for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
-		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
+		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if recipients:
