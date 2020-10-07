@@ -2,6 +2,7 @@ import io
 from collections import Iterable
 from copy import deepcopy
 from datetime import timedelta, datetime
+import hashlib
 from http import HTTPStatus
 from logging import getLogger
 from re import match
@@ -995,6 +996,7 @@ def send_out_of_time_reservation_notification(reservation:Reservation):
 
 def send_user_reservation_change_notification(reservation: Reservation):
 	site_title = get_customization('site_title')
+	confirmed = False
 	cancelled = False
 	# Infer reason for the email
 	if reservation.cancelled:
@@ -1003,6 +1005,7 @@ def send_user_reservation_change_notification(reservation: Reservation):
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
 	elif reservation.confirmed:
+		confirmed = True
 		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_confirmed_user_email.html')
 		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_confirmed_reservation else []
@@ -1017,28 +1020,53 @@ def send_user_reservation_change_notification(reservation: Reservation):
 		user_office_email = get_customization('user_office_email_address')
 		# We don't need to verify the existence of a template because we are attaching the ics reservation and sending the email regardless (message will be blank)
 		if user_office_email:
-			attachment = create_ics_for_reservation(reservation, cancelled=cancelled)
+			attachment = create_ics_for_reservation(reservation, cancelled=cancelled, confirmed=confirmed)
 			send_mail(subject, message, user_office_email, recipients, [attachment])
 		else:
 			calendar_logger.error("User reservation notification could not be sent because user_office_email_address is not defined")
 
 
-def create_ics_for_reservation(reservation: Reservation, cancelled=False):
+def create_ics_for_reservation(reservation: Reservation, cancelled=False, confirmed=False):
 	site_title = get_customization('site_title')
-	method = 'METHOD:CANCEL\n' if cancelled else 'METHOD:PUBLISH\n'
-	status = 'STATUS:CANCELLED\n' if cancelled else 'STATUS:CONFIRMED\n'
-	uid = 'UID:'+str(reservation.id)+'\n'
-	sequence = 'SEQUENCE:2\n' if cancelled else 'SEQUENCE:0\n'
-	priority = 'PRIORITY:5\n' if cancelled else 'PRIORITY:0\n'
+	method = 'PUBLISH'
+	priority = '0'
+	# Set properties for confirmed and cancelled reservations
+	if cancelled:
+		method = 'CANCEL'
+		status = 'CANCELLED'
+		sequence = '2'
+		fname = 'cancelled'
+	elif confirmed:
+		status = 'CONFIRMED'
+		sequence = '1'
+		fname = 'confirmed'
+	else:
+		status = 'TENTATIVE'
+		sequence = '0'
+		fname = 'requested'
+	res_name = fname.capitalize()
+	# Create unique ID based on reservation number
+	uid = hashlib.md5(str(reservation.id).encode()).hexdigest()
+	# Get reservation details
 	now = datetime.now().strftime('%Y%m%dT%H%M%S')
 	start = timezone.localtime(reservation.start).strftime('%Y%m%dT%H%M%S')
 	end = timezone.localtime(reservation.end).strftime('%Y%m%dT%H%M%S')
-	reservation_name = reservation.reservation_item.name
-	lines = ['BEGIN:VCALENDAR\n', 'VERSION:2.0\n', method, 'BEGIN:VEVENT\n', uid, sequence, priority, f'DTSTAMP:{now}\n', f'DTSTART:{start}\n', f'DTEND:{end}\n', f'SUMMARY:[{site_title}] {reservation_name} Reservation\n', status, 'END:VEVENT\n', 'END:VCALENDAR\n']
-	ics = io.StringIO('')
-	ics.writelines(lines)
+	reservation_name = reservation.reservation_item.name + f" - {res_name}"
+	# Populate iCal template
+	template = f"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//{site_title}//NEMO Software//EN\r\nMETHOD:{method}\r\n"
+	# Add timezone information
+	template += f"BEGIN:VTIMEZONE\r\nTZID:America/New_York\r\nLAST-MODIFIED:20050809T050000Z\r\nBEGIN:STANDARD\r\n"
+	template += f"DTSTART:20071104T020000\r\nTZOFFSETFROM:-0400\r\nTZOFFSETTO:-0500\r\nTZNAME:EST\r\nEND:STANDARD\r\n"
+	template += f"BEGIN:DAYLIGHT\r\nDTSTART:20070311T020000\r\nTZOFFSETFROM:-0500\r\nTZOFFSETTO:-0400\r\nTZNAME:EDT\r\n"
+	# Add reservation specific information
+	template += f"END:DAYLIGHT\r\nEND:VTIMEZONE\r\nBEGIN:VEVENT\r\nUID:{uid}\r\nSEQUENCE:{sequence}\r\n"
+	template += f"PRIORITY:{priority}\r\nDTSTAMP:{now}\r\nDTSTART:{start}\r\nDTEND:{end}\r\nSUMMARY:[{site_title}] "
+	template += f"{reservation_name} Reservation\r\nSTATUS:{status}\r\nEND:VEVENT\r\nEND:VCALENDAR"
+	# Create an IO stream based off the template
+	ics = io.StringIO(template)
 	ics.seek(0)
 
-	filename = 'cancelled_reservation.ics' if cancelled else 'reservation.ics'
+	# Create a file name for the reservation based on the reservation type
+	filename = f'reservation_{fname}.ics'
 
 	return create_email_attachment(ics, filename)
