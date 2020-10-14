@@ -10,7 +10,7 @@
 		<div class="alert alert-danger">This reservation was automatically removed from the calendar due to {{ reservation.reservation_item_type.value }} inactivity.</div>
 	{% endif %}
 
-	{% if user.is_staff %}
+	{% if user.is_staff or reservation.user == user %}
 		<div class="input-group">
 			<span class="input-group-addon">
 				Title

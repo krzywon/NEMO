@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('NEMO', '0023_badgereader'),
+        ('NEMO', '0024_contactinformation_user'),
     ]
 
     operations = [
@@ -31,5 +31,15 @@ class Migration(migrations.Migration):
             model_name='userpreferences',
             name='attach_confirmed_reservation',
             field=models.BooleanField('confirmed_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when a reservation is confirmed'),
-        )
+        ),
+        migrations.AddField(
+            model_name='reservation',
+            name='cancellation_reason',
+            field=models.BooleanField(default=True, help_text='When checked, the reservation has been confirmed by an admin of the area/tool/etc.'),
+        ),
+        migrations.AddField(
+            model_name='reservation',
+            name='cancellation_reason',
+            field=models.TextField(default='', null=True, blank=True, max_length=200, help_text="Shows the reason the reservation was cancelled."),
+        ),
     ]
