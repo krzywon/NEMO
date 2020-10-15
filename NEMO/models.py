@@ -126,6 +126,7 @@ class User(models.Model):
 	email = models.EmailField(verbose_name='email address')
 	type = models.ForeignKey(UserType, null=True, blank=True, on_delete=models.SET_NULL)
 	domain = models.CharField(max_length=100, blank=True, help_text="The Active Directory domain that the account resides on")
+	supervisor = models.ManyToManyField('User', blank=True, help_text='The supervisor(s) directly above this user who should be notified when the user requests a reservation.')
 
 	# Physical access fields
 	badge_number = models.PositiveIntegerField(null=True, blank=True, unique=True, help_text="The badge number associated with this user. This number must correctly correspond to a user in order for the tablet-login system (in the lobby) to work properly.")
@@ -300,6 +301,8 @@ class User(models.Model):
 			email_url = reverse('get_email_form_for_user', kwargs={'user_id':self.id})
 			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
+	def supervisor_email_list(self):
+		return [user.email for user in self.supervisor.all()]
 
 	@classmethod
 	def get_email_field_name(cls):

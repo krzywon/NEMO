@@ -487,12 +487,12 @@ class UserAdminForm(forms.ModelForm):
 @register(User)
 class UserAdmin(admin.ModelAdmin):
 	form = UserAdminForm
-	filter_horizontal = ('groups', 'user_permissions', 'qualifications', 'projects', 'physical_access_levels')
+	filter_horizontal = ('groups', 'user_permissions', 'qualifications', 'projects', 'physical_access_levels', 'supervisor')
 	fieldsets = (
 		('Personal information', {'fields': ('first_name', 'last_name', 'username', 'email', 'badge_number', 'type', 'domain')}),
 		('Permissions', {'fields': ('is_active', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'training_required', 'groups', 'user_permissions', 'physical_access_levels')}),
 		('Important dates', {'fields': ('date_joined', 'last_login', 'access_expiration')}),
-		("Facility information", {'fields': ('qualifications', 'projects')}),
+		("Facility information", {'fields': ('qualifications', 'projects', 'supervisor')}),
 	)
 	search_fields = ('first_name', 'last_name', 'username', 'email')
 	list_display = ('first_name', 'last_name', 'username', 'email', 'is_active', 'domain', 'is_staff', 'is_technician', 'is_service_personnel', 'is_superuser', 'date_joined', 'last_login')
@@ -509,6 +509,7 @@ class UserAdmin(admin.ModelAdmin):
 		record_local_many_to_many_changes(request, obj, form, 'projects')
 		record_local_many_to_many_changes(request, obj, form, 'qualifications')
 		record_local_many_to_many_changes(request, obj, form, 'physical_access_levels')
+		record_local_many_to_many_changes(request, obj, form, 'supervisor')
 		record_active_state(request, obj, form, 'is_active', not change)
 
 

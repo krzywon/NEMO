@@ -1021,6 +1021,8 @@ def send_user_reservation_change_notification(reservation: Reservation):
 		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
+	if reservation.user.supervisor:
+		recipients.extend(reservation.user.supervisor_email_list())
 	if recipients:
 		message = Template(message).render(Context({'reservation': reservation}))
 		user_office_email = get_customization('user_office_email_address')
