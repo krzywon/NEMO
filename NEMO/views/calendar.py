@@ -667,7 +667,6 @@ def cancel_outage(request, outage_id):
 		return render(request, 'mobile/cancellation_result.html', dictionary)
 
 
-@staff_member_required(login_url=None)
 @require_POST
 def set_reservation_title(request, reservation_id):
 	""" Change reservation title for a user. """
