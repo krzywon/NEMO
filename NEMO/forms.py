@@ -275,7 +275,7 @@ class ScheduledOutageForm(ModelForm):
 class UserPreferencesForm(ModelForm):
 	class Meta:
 		model = UserPreferences
-		fields = ['attach_created_reservation', 'attach_cancelled_reservation', 'attach_confirmed_reservation']
+		fields = ['attach_created_reservation', 'attach_cancelled_reservation', 'attach_confirmed_reservation', 'alternate_email_address']
 
 
 def nice_errors(form, non_field_msg='General form errors'):

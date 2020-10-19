@@ -1009,16 +1009,16 @@ def send_user_reservation_change_notification(reservation: Reservation):
 		cancelled = True
 		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
-		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_cancelled_reservation else []
+		recipients = reservation.user.get_email_list() if reservation.user.get_preferences().attach_cancelled_reservation else []
 	elif reservation.confirmed:
 		confirmed = True
 		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_confirmed_user_email.html')
-		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_confirmed_reservation else []
+		recipients = reservation.user.get_email_list() if reservation.user.get_preferences().attach_confirmed_reservation else []
 	else:
 		subject = f"[{site_title}] Reservation Requested for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
-		recipients = [reservation.user.email] if reservation.user.get_preferences().attach_created_reservation else []
+		recipients = reservation.user.get_email_list() if reservation.user.get_preferences().attach_created_reservation else []
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
 	if reservation.user.supervisor:

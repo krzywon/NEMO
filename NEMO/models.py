@@ -82,6 +82,7 @@ class UserPreferences(models.Model):
 	attach_created_reservation = models.BooleanField('created_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when creating a new reservation')
 	attach_cancelled_reservation = models.BooleanField('cancelled_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when cancelling a reservation')
 	attach_confirmed_reservation = models.BooleanField('confirmed_reservation_invite', default=False, help_text='Whether or not to send a calendar invitation when a reservation is confirmed')
+	alternate_email_address = models.EmailField(verbose_name='email address', blank=True, null=True, help_text="An alternate email address where all invitations will be sent.")
 
 	class Meta:
 		verbose_name = 'User preferences'
@@ -219,7 +220,7 @@ class User(models.Model):
 
 	def email_user(self, subject, message, from_email, attachments=None):
 		""" Sends an email to this user. """
-		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=[self.email], attachments=attachments)
+		send_mail(subject=subject, message=message, from_email=from_email, recipient_list=self.get_email_list(), attachments=attachments)
 
 	def get_full_name(self):
 		return self.get_name() + ' (' + self.username + ')'
@@ -229,6 +230,12 @@ class User(models.Model):
 
 	def get_name(self):
 		return self.first_name + ' ' + self.last_name
+
+	def get_email_list(self):
+		email_list = [self.email]
+		if self.preferences.alternate_email_address:
+			email_list.append(self.preferences.alternate_email_address)
+		return email_list
 
 	def accessible_access_levels(self):
 		if not self.is_staff:
@@ -289,7 +296,7 @@ class User(models.Model):
 	def get_preferences(self):
 		if not self.preferences:
 			default_reservation_preferences = getattr(settings, 'USER_RESERVATION_PREFERENCES_DEFAULT', False)
-			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences)
+			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences, attach_confirmed_reservations=default_reservation_preferences, alternate_email_address='')
 			self.save()
 		return self.preferences
 
@@ -302,7 +309,7 @@ class User(models.Model):
 			return f'<a href="{email_url}" title="Email {self.first_name}"><span class="glyphicon glyphicon-send small-icon"></span>{self.get_name()}</a>'
 
 	def supervisor_email_list(self):
-		return [user.email for user in self.supervisor.all()]
+		return [email for user in self.supervisor.all() for email in user.get_email_list()]
 
 	@classmethod
 	def get_email_field_name(cls):

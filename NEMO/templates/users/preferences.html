@@ -16,6 +16,10 @@
 				<div class="checkbox">
 					<label><input name="attach_confirmed_reservation" type="checkbox" {% if user_preferences.attach_confirmed_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when a reservation is confirmed</label>
 				</div>
+				<div class="col-md-3">
+					<label>Alternate Email Addresses:
+						<input type="email" id="alternate_email_address" name="alternate_email_address" class="form-control" value="{{ user_preferences.alternate_email_address }}" placeholder="alternate@example.com"></label>
+				</div>
 			</div>
 			<input type="submit" value="Update" class="btn btn-info">
 		</form>
