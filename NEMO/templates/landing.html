@@ -27,7 +27,7 @@
 					{% if r.tool %}<a href="{% url 'tool_control' r.tool.id %}" style="text-decoration: none">
 					{% elif self_log_in and r.area and r.start < now %}<a href="{% url 'self_log_in' %}?area_id={{ r.area.id }}" style="text-decoration: none">
 					{% elif device == 'mobile' and r.area %}<a href="{% url 'view_calendar' item_type='area' item_id=r.area.id date=r.start|date:'Y-m-d' %}" style="text-decoration: none">{% endif %}
-						<div class="alert {% if r.start < now or not r.confirmed %}alert-warning{% else %}alert-success{% endif %}">
+						<div class="alert {% if r.start < now or not r.confirmed %}alert-danger{% else %}alert-success{% endif %}">
 							{% if r.title %}<b>{{ r.title }}</b><br>{% endif %}
 							<b>{% if r.start < now %}You're late for your {{ r.reservation_item }} reservation!{% else %}{{ r.reservation_item }}{% endif %}{% if not r.confirmed %} - Awaiting Confirmation {% endif %}</b><br>
 							Starting on {{ r.start|date:"l, F jS @ g:i A" }}<br>
