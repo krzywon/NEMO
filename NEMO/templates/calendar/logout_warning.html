@@ -1,0 +1,27 @@
+<div class="alert alert-warning" style="margin-bottom: 0">
+	<table style="width: 100%">
+		<tr>
+			<th class="alert alert-danger danger-highlight text-center">
+				<table style="margin: auto">
+					<tr>
+						<td style="padding-right: 10px"><span class="glyphicon glyphicon-alert warning-highlight notification-icon"></span></td>
+						<td>You are logging out of {{ area.name }} but you reservation does not end until {{ reservation.end }}</td>
+					</tr>
+				</table>
+			</th>
+		</tr>
+		<tr style="height: 15px"></tr>
+		<tr>
+			<td class="text-center" style="color:black;">
+				You can logout and end your reservation now, logout but keep the remainder of your reservation, or remain logged in.
+			</td>
+		</tr>
+	</table>
+	<div style="text-align: center; margin-top: 15px">
+		<form action="" method="post">{% csrf_token %}
+			<input type="submit" name="shorten" value="End Reservation" />
+			<input type="submit" name="retain" value="Continue Reservation" />
+			<input type="submit" name="cancel" value="Remain Logged In" />
+		</form>
+	</div>
+</div>

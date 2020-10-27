@@ -305,7 +305,19 @@ def self_log_in(request, load_areas=True):
 
 @login_required
 @require_GET
-def self_log_out(request, user_id):
+def logout_warning(request):
+	button_clicked = render(request, 'area_access/logout_warning.html', {'users': User.objects.filter(is_active=True)})
+	# TODO: Determine which button is pressed
+	# TODO: Return <???> if not logging out - HttpRequest? - Need to bypass calendar.html->logout_warning() callback
+	# TODO: Corollary to above - pass one more variable to self_log_out
+	# TODO: Return True if shortening
+	# TODO: Return False if reservation remains the same length
+	return
+
+
+@login_required
+@require_GET
+def self_log_out(request, user_id, shorten=True):
 	user = get_object_or_404(User, id=user_id)
 	if able_to_self_log_out_of_area(user):
 		record = user.area_access_record()
@@ -313,8 +325,9 @@ def self_log_out(request, user_id):
 			return HttpResponseBadRequest('You are not logged into any areas.')
 		record.end = timezone.now()
 		record.save()
-		# Shorten the user's area reservation since the user is now leaving
-		shorten_reservation(request.user, record.area)
+		if shorten:
+			# Shorten the user's area reservation since the user is now leaving
+			shorten_reservation(request.user, record.area)
 	return redirect(reverse('landing'))
 
 

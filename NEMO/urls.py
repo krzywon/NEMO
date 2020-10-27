@@ -178,6 +178,8 @@ urlpatterns = [
 	url(r'^calendar_self_log_in/$', area_access.calendar_self_login, name='calendar_self_log_in'),
 	url(r'^self_log_in/$', area_access.self_log_in, name='self_log_in'),
 	url(r'^self_log_out/(?P<user_id>\d+)$', area_access.self_log_out, name='self_log_out'),
+	# TODO: Do I need <user_id> here?
+	url(r'^logout_warning/(?P<user_id>\d+)$', area_access.logout_warning, name='logout_warning'),
 
 	# Facility usage:
 	url(r'^usage/$', usage.usage, name='usage'),

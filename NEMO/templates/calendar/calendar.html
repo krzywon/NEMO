@@ -404,7 +404,7 @@ function create_calendar()
 			},
 			"logout": {
 				"text": "Logout",
-				"click": logout_of_area
+				"click": logout_warning
 			}
 		}
 	};
@@ -463,6 +463,12 @@ function login_to_area()
         }
 		ajax_post(url, event_changes, function(response, status, xml_http_request) { return event_creation_success_callback(response, status, xml_http_request, post_data, callback) }, [ajax_failure_callback("Login to area failed")], refresh_sidebar_area_icons)
 	}
+}
+
+function logout_warning()
+{
+	{# TODO: Need to be able to bypass callback here - How to do? #}
+	ajax_get('{% url 'logout_warning' %}', undefined, logout_of_area);
 }
 
 function logout_of_area()

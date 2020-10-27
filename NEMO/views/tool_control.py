@@ -217,7 +217,7 @@ def enable_tool(request, tool_id, user_id, project_id, staff_charge):
 
 @login_required
 @require_POST
-def disable_tool(request, tool_id):
+def disable_tool(request, tool_id, shorten=True):
 
 	if not settings.ALLOW_CONDITIONAL_URLS:
 		return HttpResponseBadRequest('Tool control is only available on campus.')
@@ -230,8 +230,9 @@ def disable_tool(request, tool_id):
 	if response.status_code != HTTPStatus.OK:
 		return response
 
-	# Shorten the user's tool reservation since we are now done using the tool
-	shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
+	if shorten:
+		# Shorten the user's tool reservation since we are now done using the tool
+		shorten_reservation(user=request.user, item=tool, new_end=timezone.now() + downtime)
 
 	# All policy checks passed so disable the tool for the user.
 	if tool.interlock and not tool.interlock.lock():
