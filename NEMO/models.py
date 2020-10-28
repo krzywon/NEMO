@@ -233,7 +233,7 @@ class User(models.Model):
 
 	def get_email_list(self):
 		email_list = [self.email]
-		if self.preferences.alternate_email_address:
+		if self.preferences and self.preferences.alternate_email_address:
 			email_list.append(self.preferences.alternate_email_address)
 		return email_list
 
@@ -296,7 +296,7 @@ class User(models.Model):
 	def get_preferences(self):
 		if not self.preferences:
 			default_reservation_preferences = getattr(settings, 'USER_RESERVATION_PREFERENCES_DEFAULT', False)
-			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences, attach_confirmed_reservations=default_reservation_preferences, alternate_email_address='')
+			self.preferences = UserPreferences.objects.create(attach_cancelled_reservation=default_reservation_preferences, attach_created_reservation=default_reservation_preferences, attach_confirmed_reservation=default_reservation_preferences, alternate_email_address='')
 			self.save()
 		return self.preferences
 
