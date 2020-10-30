@@ -123,6 +123,8 @@ def event_feed(request):
 	elif event_type == f"{facility_name.lower()} usage":
 		return usage_event_feed(request, start, end)
 	# Only staff may request a specific user's history...
+	elif event_type == 'confirmation window':
+		return reservation_event_feed_unconfirmed(request, start, end)
 	elif event_type == 'specific user' and request.user.is_staff:
 		user = get_object_or_404(User, id=request.GET.get('user'))
 		return specific_user_feed(request, user, start, end)
@@ -179,6 +181,21 @@ def reservation_event_feed(request, start, end):
 		'personal_schedule': personal_schedule,
 	}
 	return render(request, 'calendar/reservation_event_feed.html', dictionary)
+
+
+def reservation_event_feed_unconfirmed(request, start, end):
+	events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, confirmed=False)
+	outages = ScheduledOutage.objects.none()
+	# Exclude events for which the following is true:
+	# The event starts and ends before the time-window, and...
+	# The event starts and ends after the time-window.
+	events = events.exclude(start__lt=start, end__lt=start)
+	events = events.exclude(start__gt=end, end__gt=end)
+
+	dictionary = {
+		'events': events,
+	}
+	return render(request, 'calendar/reservation_event_feed_unconfirmed.html', dictionary)
 
 
 def usage_event_feed(request, start, end):

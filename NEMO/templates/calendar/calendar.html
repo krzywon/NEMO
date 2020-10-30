@@ -21,6 +21,9 @@
 			{% if user.is_staff %}
 				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} reservations and usage for a specific user. This includes reservations, area access, tool usage, and missed reservations."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Specific user</a></li>
 			{% endif %}
+			{% if user.is_superuser %}
+				<li data-toggle="tooltip" data-placement="right" title="Displays {{ facility_name }} unconfirmed reservations and usage for all areas and tools."><a href="javascript:void(0)" onclick="change_calendar_event_type(this)">Confirmation window</a></li>
+			{% endif %}
 		</ul>
 	</div>
 	<div id="expand-collapse" class="btn-group sidebar-item">
@@ -73,7 +76,7 @@ function update_event_sources()
 		}
 	};
 
-	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
+	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage' || event_type === 'confirmation window')
 	{
 		let item = get_selected_item();
 		let login_button = $(".fc-login-button")[0];
@@ -581,6 +584,18 @@ function change_calendar_event_type(calling_element)
 		$($('.fc-login-button')[0]).html('Login')
 		$($('.fc-login-button')[0]).addClass('fc-state-disabled')
 		clear_specific_user();
+	}
+	else if(event_type === "confirmation window")
+	{
+		user_search.hide();
+		chosen_user_button.hide();
+		extra_links.show();
+		expand_collapse.show();
+		item_search.show();
+		item_tree.show();
+		$(proxy_reservation_button).show();
+		$(scheduled_outage_button).show();
+		update_event_sources();
 	}
 }
 

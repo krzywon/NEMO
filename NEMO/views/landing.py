@@ -40,11 +40,18 @@ def landing(request):
 	if user.in_area():
 		upcoming_reservations = upcoming_reservations.exclude(area=user.area_access_record().area, start__lte=fifteen_minutes_from_now)
 	upcoming_reservations = upcoming_reservations.order_by('start')[:3]
+
+	unconfirmed_reservations = Reservation.objects.filter(confirmed=False).order_by('start')[:3]
+	# FIXME: There should be an easier way to do this on the page rather than here...
+	number_unconfirmed = Reservation.objects.filter(confirmed=False).count()
+
 	dictionary = {
 		'now': timezone.now(),
 		'alerts': Alert.objects.filter(Q(user=None) | Q(user=user), debut_time__lte=timezone.now(), expired=False, deleted=False),
 		'usage_events': usage_events,
 		'upcoming_reservations': upcoming_reservations,
+		'number_unconfirmed': number_unconfirmed,
+		'unconfirmed_reservations': unconfirmed_reservations,
 		'disabled_resources': Resource.objects.filter(available=False),
 		'landing_page_choices': landing_page_choices,
 		'notification_counts': get_notificaiton_counts(request.user),
