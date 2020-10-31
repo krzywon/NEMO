@@ -76,7 +76,7 @@ function update_event_sources()
 		}
 	};
 
-	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage' || event_type === 'confirmation window')
+	if(event_type === 'reservations' || event_type === '{{ facility_name|lower }} usage')
 	{
 		let item = get_selected_item();
 		let login_button = $(".fc-login-button")[0];
@@ -587,14 +587,14 @@ function change_calendar_event_type(calling_element)
 	}
 	else if(event_type === "confirmation window")
 	{
-		user_search.hide();
-		chosen_user_button.hide();
-		extra_links.show();
-		expand_collapse.show();
-		item_search.show();
-		item_tree.show();
-		$(proxy_reservation_button).show();
-		$(scheduled_outage_button).show();
+		extra_links.hide();
+		expand_collapse.hide();
+		item_search.hide();
+		item_tree.hide();
+		$(proxy_reservation_button).hide();
+		$(scheduled_outage_button).hide();
+		$($('.fc-login-button')[0]).html('Login')
+		$($('.fc-login-button')[0]).addClass('fc-state-disabled')
 		update_event_sources();
 	}
 }

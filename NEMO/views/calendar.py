@@ -185,7 +185,7 @@ def reservation_event_feed(request, start, end):
 
 
 def reservation_event_feed_unconfirmed(request, start, end):
-	events = Reservation.objects.filter(cancelled=False, missed=False, confirmed=False)
+	events = Reservation.objects.filter(end__gt=timezone.now(), cancelled=False, confirmed=False)
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.

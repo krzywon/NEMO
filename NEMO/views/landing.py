@@ -41,9 +41,9 @@ def landing(request):
 		upcoming_reservations = upcoming_reservations.exclude(area=user.area_access_record().area, start__lte=fifteen_minutes_from_now)
 	upcoming_reservations = upcoming_reservations.order_by('start')[:3]
 
-	unconfirmed_reservations = Reservation.objects.filter(confirmed=False).order_by('start')[:3]
+	unconfirmed_reservations = Reservation.objects.filter(end__gt=timezone.now(), cancelled=False, confirmed=False).order_by('start')[:3]
 	# FIXME: There should be an easier way to do this on the page rather than here...
-	number_unconfirmed = Reservation.objects.filter(confirmed=False).count()
+	number_unconfirmed = Reservation.objects.filter(end__gt=timezone.now(), cancelled=False, confirmed=False).count()
 
 	dictionary = {
 		'now': timezone.now(),
