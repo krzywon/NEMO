@@ -122,9 +122,10 @@ def event_feed(request):
 		return reservation_event_feed(request, start, end)
 	elif event_type == f"{facility_name.lower()} usage":
 		return usage_event_feed(request, start, end)
-	# Only staff may request a specific user's history...
-	elif event_type == 'confirmation window':
+	# Only superusers may request unconfirmed reservations
+	elif event_type == 'confirmation window' and request.user.is_superuser:
 		return reservation_event_feed_unconfirmed(request, start, end)
+	# Only staff may request a specific user's history...
 	elif event_type == 'specific user' and request.user.is_staff:
 		user = get_object_or_404(User, id=request.GET.get('user'))
 		return specific_user_feed(request, user, start, end)
@@ -184,8 +185,7 @@ def reservation_event_feed(request, start, end):
 
 
 def reservation_event_feed_unconfirmed(request, start, end):
-	events = Reservation.objects.filter(cancelled=False, missed=False, shortened=False, confirmed=False)
-	outages = ScheduledOutage.objects.none()
+	events = Reservation.objects.filter(cancelled=False, missed=False, confirmed=False)
 	# Exclude events for which the following is true:
 	# The event starts and ends before the time-window, and...
 	# The event starts and ends after the time-window.
