@@ -8,16 +8,16 @@
 			{% csrf_token %}
 			<div class="form-group">
 				<div class="checkbox">
-					<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when creating reservation</label>
+					<label><input name="attach_created_reservation" type="checkbox" {% if user_preferences.attach_created_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when a reservation is created for you or your subordinates</label>
 				</div>
 				<div class="checkbox">
-					<label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when cancelling a reservation</label>
+					<label><input name="attach_cancelled_reservation" type="checkbox" {% if user_preferences.attach_cancelled_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when a reservation is cancelled for you or your subordinates</label>
 				</div>
 				<div class="checkbox">
-					<label><input name="attach_confirmed_reservation" type="checkbox" {% if user_preferences.attach_confirmed_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when a reservation is confirmed</label>
+					<label><input name="attach_confirmed_reservation" type="checkbox" {% if user_preferences.attach_confirmed_reservation %}checked{% endif %}>Check this box to receive ICS calendar invitation when a reservation is confirmed for you or your subordinates</label>
 				</div>
 				<div class="col-md-3">
-					<label>Alternate Email Addresses:
+					<label>Secondary Email Address:
 						<input type="email" id="alternate_email_address" name="alternate_email_address" class="form-control" value="{{ user_preferences.alternate_email_address }}" placeholder="alternate@example.com"></label>
 				</div>
 			</div>

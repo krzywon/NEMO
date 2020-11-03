@@ -124,7 +124,7 @@ def event_feed(request):
 		return usage_event_feed(request, start, end)
 	# Only superusers may request unconfirmed reservations
 	elif event_type == 'confirmation window' and request.user.is_superuser:
-		return reservation_event_feed_unconfirmed(request, start, end)
+		return reservation_event_feed_unconfirmed(request)
 	# Only staff may request a specific user's history...
 	elif event_type == 'specific user' and request.user.is_staff:
 		user = get_object_or_404(User, id=request.GET.get('user'))
@@ -184,13 +184,8 @@ def reservation_event_feed(request, start, end):
 	return render(request, 'calendar/reservation_event_feed.html', dictionary)
 
 
-def reservation_event_feed_unconfirmed(request, start, end):
+def reservation_event_feed_unconfirmed(request):
 	events = Reservation.objects.filter(end__gt=timezone.now(), cancelled=False, confirmed=False)
-	# Exclude events for which the following is true:
-	# The event starts and ends before the time-window, and...
-	# The event starts and ends after the time-window.
-	events = events.exclude(start__lt=start, end__lt=start)
-	events = events.exclude(start__gt=end, end__gt=end)
 
 	dictionary = {
 		'events': events,
@@ -1022,24 +1017,31 @@ def send_user_reservation_change_notification(reservation: Reservation):
 	confirmed = False
 	cancelled = False
 	# Infer reason for the email
+	# TODO: Combine these in some meaningful way
 	if reservation.cancelled:
 		cancelled = True
 		subject = f"[{site_title}] Cancelled Reservation for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_cancelled_user_email.html')
 		recipients = reservation.user.get_email_list() if reservation.user.get_preferences().attach_cancelled_reservation else []
+		for supervisor in reservation.user.supervisor.all():
+			recipients.extend(supervisor.get_email_list() if supervisor.get_preferences().attach_cancelled_reservation else [])
 	elif reservation.confirmed:
 		confirmed = True
 		subject = f"[{site_title}] Reservation Confirmed for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_confirmed_user_email.html')
 		recipients = reservation.user.get_email_list() if reservation.user.get_preferences().attach_confirmed_reservation else []
+		for supervisor in reservation.user.supervisor.all():
+			recipients.extend(supervisor.get_email_list() if supervisor.get_preferences().attach_confirmed_reservation else [])
 	else:
 		subject = f"[{site_title}] Reservation Requested for the " + str(reservation.reservation_item)
 		message = get_media_file_contents('reservation_created_user_email.html')
 		recipients = reservation.user.get_email_list() if reservation.user.get_preferences().attach_created_reservation else []
+		for supervisor in reservation.user.supervisor.all():
+			recipients.extend(supervisor.get_email_list() if supervisor.get_preferences().attach_created_reservation else [])
 	if reservation.area:
 		recipients.extend(reservation.area.reservation_email_list())
-	if reservation.user.supervisor:
-		recipients.extend(reservation.user.supervisor_email_list())
+	if reservation.tool:
+		recipients.extend(reservation.tool.primary_owner.get_email_list())
 	if recipients:
 		message = Template(message).render(Context({'reservation': reservation}))
 		user_office_email = get_customization('user_office_email_address')
