@@ -22,16 +22,15 @@
 	<div class="row">
 		{% if user.is_superuser and unconfirmed_reservations %}
 			<div class="col-lg-4">
-				<h3>Reservations in-need of review</h3>
+				<h3>{{ number_unconfirmed }} Reservations Need Review</h3>
 				{% for r in unconfirmed_reservations %}
 					<div class="alert {% if r.start < now or not r.confirmed %}alert-danger{% else %}alert-success{% endif %}">
-						{% if r.title %}<b>{{ r.title }}</b><br>{% endif %}
-						<b>{{ r.reservation_item }} - Awaiting Confirmation</b><br>
+
+						<b>{{ r.reservation_item }} {% if r.title %}<b>- {{ r.title }} </b><br>{% endif %}- {{ r.user }} - Awaiting Confirmation</b><br>
 						Starting on {{ r.start|date:"l, F jS @ g:i A" }}<br>
 						Ending on {{ r.end|date:"l, F jS @ g:i A" }}
 					</div>
 				{% endfor %}
-				See all {{ number_unconfirmed }} in the 'Confirmation window' in the calendar
 			</div>
 		{% endif %}
 		{% if upcoming_reservations %}
