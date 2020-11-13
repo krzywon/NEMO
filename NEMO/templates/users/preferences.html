@@ -18,7 +18,7 @@
 				</div>
 				<div class="col-md-3">
 					<label>Secondary Email Address:
-						<input type="email" id="alternate_email_address" name="alternate_email_address" class="form-control" value="{{ user_preferences.alternate_email_address }}" placeholder="alternate@example.com"></label>
+						<input type="email" id="alternate_email_address" name="alternate_email_address" class="form-control" {% if user_preferences.alternate_email_address %}value="{{ user_preferences.alternate_email_address }}"{% endif %}} placeholder="alternate@example.com"></label>
 				</div>
 			</div>
 			<input type="submit" value="Update" class="btn btn-info">
