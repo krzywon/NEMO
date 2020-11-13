@@ -442,6 +442,7 @@ class AreaReservationTestCase(TestCase):
 		self.assertEquals(response.status_code, 200)
 		self.assertTrue(Reservation.objects.get(pk=other_resa.id).cancelled)
 		self.assertEquals(Reservation.objects.get(pk=other_resa.id).cancelled_by, staff)
+		self.assertEquals(Reservation.objects.get(pk=other_resa.id).cancellation_reason, 'reason')
 
 	def test_reservation_details(self):
 		# create reservation

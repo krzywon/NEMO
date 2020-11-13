@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.urls import reverse
 
 from NEMO.models import User, UserPreferences, Account, Project, Area, PhysicalAccessLevel
 
@@ -69,24 +70,45 @@ class ToolTestCase(TestCase):
         staff.email = FAKE_EMAIL_1
         staff.save()
         staff.preferences = UserPreferences()
+
+        # Be sure there are no supervisors
         self.assertEqual(consumer.supervisor.count(), 0)
         self.assertEqual(len(consumer.supervisor_email_list()), 0)
+
+        # Add a supervisor and be sure values are correct
         consumer.supervisor.add(superuser)
         self.assertEqual(consumer.supervisor.count(), 1)
         self.assertEqual(len(consumer.supervisor_email_list()), 1)
         self.assertNotIn(FAKE_EMAIL_1, consumer.supervisor_email_list())
+
+        # Add another supervisor
         consumer.supervisor.add(staff)
         self.assertEqual(consumer.supervisor.count(), 2)
         self.assertEqual(len(consumer.supervisor_email_list()), 2)
         self.assertIn(FAKE_EMAIL_1, consumer.supervisor_email_list())
+
+        # Remove 1st supervisor
         consumer.supervisor.remove(superuser)
         self.assertEqual(consumer.supervisor.count(), 1)
         self.assertEqual(len(consumer.supervisor_email_list()), 1)
+
+        # Remove 2nd supervisor
         consumer.supervisor.remove(staff)
         self.assertEqual(consumer.supervisor.count(), 0)
         self.assertEqual(len(consumer.supervisor_email_list()), 0)
 
     def test_set_invalid_user_values(self):
-        # TODO: Write more here...
+        # Test adding an email address to the supervisors list causes an error
         self.assertEqual(consumer.supervisor.count(), 0)
         self.assertRaises(ValueError, consumer.supervisor.add, FAKE_EMAIL_1)
+
+        # Test adding an invalid email address to user preferences fails
+        data = {
+            'attach_created_reservation': consumer.preferences.attach_created_reservation,
+            'attach_cancelled_reservation': consumer.preferences.attach_cancelled_reservation,
+            'attach_confirmed_reservation': consumer.preferences.attach_confirmed_reservation,
+            'alternate_email_address': BAD_EMAIL,
+        }
+        response = self.client.post(reverse('create_reservation'), data, follow=True)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(consumer.preferences.alternate_email_address)
