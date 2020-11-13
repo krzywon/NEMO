@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from NEMO.models import User, ScheduledOutage, Reservation, Account, Project, Area, PhysicalAccessLevel, \
-	AreaAccessRecord
+	AreaAccessRecord, Customization
 from NEMO.tests.test_utilities import login_as_user, login_as
 
 
@@ -15,15 +15,17 @@ class AreaReservationTestCase(TestCase):
 	owner: User = None
 	consumer: User = None
 	staff: User = None
+	superuser: User = None
 	project: Project = None
 
 	def setUp(self):
-		global area, area_access_level, consumer, staff, project
+		global area, area_access_level, consumer, staff, superuser, project
 		area = Area.objects.create(name='test_area', requires_reservation=True, category='Imaging')
 		area_access_level = PhysicalAccessLevel.objects.create(name='area access level', area=area, schedule=PhysicalAccessLevel.Schedule.ALWAYS)
 		account = Account.objects.create(name="account1")
 		project = Project.objects.create(name="project1", account=account)
 		staff = User.objects.create(username='staff', first_name='Staff', last_name='Member', is_staff=True)
+		superuser = User.objects.create(username='superuser', first_name='Superuser', last_name='Member', is_superuser=True)
 		consumer = User.objects.create(username='jsmith', first_name='John', last_name='Smith', training_required=False)
 		consumer.physical_access_levels.add(area_access_level)
 		consumer.projects.add(project)
@@ -476,35 +478,39 @@ class AreaReservationTestCase(TestCase):
 		self.assertTrue(True)
 
 	def test_confirmation_system(self):
-		start = datetime.now() + timedelta(hours=1)
-		end = start + timedelta(hours=1)
+		# Create customization
+		Customization.objects.create(name="reservations_require_confirmation", value="enabled")
+		login_as(self.client, user=consumer)
 
 		# create reservation
-		new_reservation = Reservation.objects.create(
-			area=area, start=start - timedelta(days=1),
-			end=end - timedelta(days=1), user=consumer,
-			creator=consumer, short_notice=False)
+		start = datetime.now() + timedelta(hours=1)
+		end = start + timedelta(hours=1)
+		data = self.get_reservation_data(start, end, area)
+		response = self.client.post(reverse('create_reservation'), data, follow=True)
+		self.assertEquals(response.status_code, 200)
+		reservations = Reservation.objects.all()
+		self.assertEqual(reservations.count(), 1)
+		new_reservation = reservations.first()
 
 		# Check base confirmed values
 		self.assertTrue(hasattr(new_reservation, 'confirmed'))
 		self.assertTrue(hasattr(new_reservation, 'confirmed_by'))
 		self.assertTrue(hasattr(new_reservation, 'confirmed_time'))
 		self.assertFalse(new_reservation.confirmed)
-		# TODO: Check the actual values... null?
 		self.assertEqual(new_reservation.confirmed_by, None)
 		self.assertEqual(new_reservation.confirmed_time, None)
 
 		# Attempt to confirm a reservation as a regular user - fail gracefully
-		login_as(self.client, consumer)
 		self.assertFalse(consumer.is_superuser)
 		response = self.client.post(reverse('confirm_reservation', kwargs={'reservation_id': new_reservation.id}), {}, follow=True)
-		self.assertContains(response, "You do no not have the necessary privileges to confirm a reservation.", status_code=405)
+		self.assertContains(response, "You do no not have the necessary privileges to confirm a reservation.", status_code=400)
 		self.assertFalse(new_reservation.confirmed)
 
-		login_as(self.client, staff)
-		staff.is_superuser = True
+		login_as(self.client, superuser)
 		response = self.client.post(reverse('confirm_reservation', kwargs={'reservation_id': new_reservation.id}), {}, follow=True)
-		self.assertEquals(response.status_code, 200)
+		reservations = Reservation.objects.all()
+		new_reservation = reservations.first()
+		self.assertContains(response, "", status_code=200)
 		self.assertTrue(new_reservation.confirmed)
-		self.assertTrue(datetime.now() > new_reservation.confirmed_time)
-		self.assertEqual(staff, new_reservation.confirmed_by)
+		self.assertTrue(new_reservation.confirmed_time)
+		self.assertEqual(superuser, new_reservation.confirmed_by)

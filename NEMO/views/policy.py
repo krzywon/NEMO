@@ -464,6 +464,9 @@ def check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
 	if reservation.area and reservation.area.requires_reservation and reservation.start < timezone.now() < reservation.end and AreaAccessRecord.objects.filter(end=None, staff_charge=None, customer=reservation.user, area=reservation.area) and not user_cancelling_reservation.is_staff:
 		return HttpResponseBadRequest("You may not cancel an area reservation while logged in that area.")
 
+	if reservation.missed:
+		return HttpResponseBadRequest("This reservation was missed and cannot be modified.")
+
 	if reservation.cancelled:
 		return HttpResponseBadRequest("This reservation has already been cancelled by " + str(reservation.cancelled_by) + " at " + format_datetime(reservation.cancellation_time) + ".")
 
