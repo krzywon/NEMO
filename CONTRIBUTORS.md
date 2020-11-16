@@ -9,3 +9,5 @@
 **Mathieu Rampant** (@mrampant-nist) for billing report integration with NEMO, packaging improvements, and code quality suggestions.
 
 **Lizhong Zhang** (@lizhongz) for containerizing NEMO with Docker.
+
+**Jeff Krzywon** (@krzywon) for adding a system for confirming reservations, adding a user preference for alternate email address, allowing supervisors be attached to users for notification purposes, and various bug fixes.

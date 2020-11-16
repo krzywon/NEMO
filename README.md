@@ -3,7 +3,7 @@
 BRUCE is an implementation of the [**N**anoFab **E**quipment **M**anagement & **O**perations (NEMO)](https://github.com/usnistgov/NEMO) web application, a laboratory logistics software that strives to be intuitive and easy to use, making life easier in the lab.
 NEMO manages tool reservations, controls access to tools, and streamline logistics and communication. The code is open source and free so that other labs can benefit.
 
-BRUCE is released as Docker images and are hosted on [Docker hub](https://hub.docker.com/r/krzywon/ncnr-nemo/).
+BRUCE is released as Docker images and are hosted on [Docker hub](https://hub.docker.com/r/krzywon/bruce/).
 BRUCE does not have a test system yet, but you can try out the NEMO "[splash pad](https://hub.docker.com/r/nanofab/nemo_splash_pad/)" Docker image, which comes preconfigured and loaded with sample data. Install [Docker Community Edition (CE)](https://www.docker.com/community-edition) and run this command:  
 `docker run --detach --name nemo_splash_pad --publish 8000:8000 nanofab/nemo_splash_pad`  
 ... then open a web browser to http://localhost:8000. You can stop and remove the NEMO splash pad with the command:  
