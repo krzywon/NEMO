@@ -12,6 +12,7 @@ from NEMO.exceptions import InactiveUserError, NoActiveProjectsForUserError, Phy
 	MaximumCapacityReachedError, ReservationRequiredUserError, ScheduledOutageInProgressError
 from NEMO.models import Reservation, AreaAccessRecord, ScheduledOutage, User, Area, PhysicalAccessLevel, ReservationItemType, Tool, Project
 from NEMO.utilities import format_datetime, send_mail
+from NEMO.views.calendar import create_area_reservation_when_tool_requested
 from NEMO.views.customization import get_customization, get_media_file_contents
 
 
@@ -180,10 +181,9 @@ def check_policy_to_save_reservation(cancelled_reservation: Optional[Reservation
 											  user=user, area=area,
 											  start__lte=new_reservation.start,
 											  end__gt=new_reservation.start).exists():
-				if user == user_creating_reservation:
-					policy_problems.append(f"This tool requires a {area} reservation. Please make a reservation in the {area} prior to reserving this tool.")
-				else:
-					policy_problems.append(f"This tool requires a {area} reservation. Please make sure to also create a reservation in the {area} or {str(user)} will not be able to enter the area.")
+				problems = create_area_reservation_when_tool_requested(new_reservation, user)
+				if problems:
+					policy_problems.append(problems)
 
 	# The user must complete training to create reservations.
 	# Staff may break this rule.

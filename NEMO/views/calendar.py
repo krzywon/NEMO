@@ -949,6 +949,22 @@ def shorten_reservation(user: User, item: Union[Area, Tool], new_end: datetime =
 		pass
 
 
+def create_area_reservation_when_tool_requested(tool_reservation: Reservation, user: User):
+	new_reservation = deepcopy(tool_reservation)
+	area: Area = new_reservation.tool.requires_area_access
+	new_reservation.id = None
+	new_reservation.tool = None
+	new_reservation.area = area
+	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=None, new_reservation=new_reservation, user_creating_reservation=user)
+
+	# If there was a problem in saving the reservation then return the error...
+	if policy_problems:
+		return policy_problems
+	else:
+		new_reservation.save_and_notify()
+		return None
+
+
 def confirm_the_reservation(reservation: Reservation, user_confirming_reservation: User):
 	response = check_policy_to_confirm_reservation(reservation, user_confirming_reservation)
 
