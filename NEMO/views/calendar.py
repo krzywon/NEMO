@@ -72,6 +72,7 @@ def calendar(request, item_type=None, item_id=None):
 	calendar_week_column_format = get_customization('calendar_week_column_format')
 	calendar_month_column_format = get_customization('calendar_month_column_format')
 	calendar_start_of_the_day = get_customization('calendar_start_of_the_day')
+	calendar_now_indicator = get_customization('calendar_now_indicator')
 
 	dictionary = {
 		'rendered_item_tree_html': rendered_item_tree_html,
@@ -85,6 +86,7 @@ def calendar(request, item_type=None, item_id=None):
 		'calendar_week_column_format' : calendar_week_column_format,
 		'calendar_month_column_format' : calendar_month_column_format,
 		'calendar_start_of_the_day' : calendar_start_of_the_day,
+		'calendar_now_indicator' : calendar_now_indicator,
 		'self_login': False,
 		'self_logout': False,
 	}
@@ -559,16 +561,8 @@ def modify_reservation(request, start_delta, end_delta):
 		explicit_policy_override = request.POST['explicit_policy_override'] == 'true'
 	except:
 		pass
-	response = check_policy_to_cancel_reservation(reservation_to_cancel, request.user)
-	# Do not move the reservation if the user was not authorized to cancel it.
-	if response.status_code != HTTPStatus.OK:
-		return response
 	# Record the current time so that the timestamp of the cancelled reservation and the new reservation match exactly.
 	now = timezone.now()
-	# Cancel the user's original reservation.
-	reservation_to_cancel.cancelled = True
-	reservation_to_cancel.cancellation_time = now
-	reservation_to_cancel.cancelled_by = request.user
 	# Create a new reservation for the user.
 	new_reservation = Reservation()
 	new_reservation.title = reservation_to_cancel.title
@@ -594,6 +588,17 @@ def modify_reservation(request, start_delta, end_delta):
 	use_confirmation_system = get_customization('reservations_require_confirmation') == 'enabled'
 	if use_confirmation_system:
 		new_reservation.confirmed = False
+
+	response = check_policy_to_cancel_reservation(request.user, reservation_to_cancel, new_reservation)
+	# Do not move the reservation if the user was not authorized to cancel it.
+	if response.status_code != HTTPStatus.OK:
+		return response
+
+	# Cancel the user's original reservation.
+	reservation_to_cancel.cancelled = True
+	reservation_to_cancel.cancellation_time = now
+	reservation_to_cancel.cancelled_by = request.user
+
 	policy_problems, overridable = check_policy_to_save_reservation(cancelled_reservation=reservation_to_cancel, new_reservation=new_reservation, user_creating_reservation=request.user, explicit_policy_override=explicit_policy_override)
 	if policy_problems:
 		reservation_action = "resize" if start_delta is None else "move"
@@ -704,6 +709,9 @@ def change_reservation_project(request, reservation_id):
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 @require_GET
 def email_reservation_reminders(request):
+	return send_email_reservation_reminders()
+
+def send_email_reservation_reminders():
 	# Exit early if the reservation reminder email template has not been customized for the organization yet.
 	reservation_reminder_message = get_media_file_contents('reservation_reminder_email.html')
 	reservation_warning_message = get_media_file_contents('reservation_warning_email.html')
@@ -741,6 +749,11 @@ def email_reservation_reminders(request):
 @require_GET
 def email_usage_reminders(request):
 	projects_to_exclude = request.GET.getlist("projects_to_exclude[]")
+	return send_email_usage_reminders(projects_to_exclude)
+
+def send_email_usage_reminders(projects_to_exclude=None):
+	if projects_to_exclude is None:
+		projects_to_exclude = []
 	busy_users = AreaAccessRecord.objects.filter(end=None, staff_charge=None).exclude(project__id__in=projects_to_exclude)
 	busy_tools = UsageEvent.objects.filter(end=None).exclude(project__id__in=projects_to_exclude)
 
@@ -824,6 +837,9 @@ def area_access_details(request, event_id):
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def cancel_unused_reservations(request):
+	return do_cancel_unused_reservations()
+
+def do_cancel_unused_reservations():
 	"""
 	Missed reservation for tools is when there is no tool activity during the reservation time + missed reservation threshold.
 	Any tool usage will count, since we don't want to charge for missed reservation when users swap reservation or somebody else gets to use the tool.
@@ -887,6 +903,9 @@ def cancel_unused_reservations(request):
 @require_GET
 @permission_required('NEMO.trigger_timed_services', raise_exception=True)
 def email_out_of_time_reservation_notification(request):
+	return send_email_out_of_time_reservation_notification()
+
+def send_email_out_of_time_reservation_notification():
 	"""
 	Out of time reservation notification for areas is when a user is still logged in a area but his reservation expired.
 	"""
@@ -964,7 +983,7 @@ def confirm_the_reservation(reservation: Reservation, user_confirming_reservatio
 
 def cancel_the_reservation(reservation: Reservation, user_cancelling_reservation: User, reason: Optional[str]):
 	# Check policy to cancel reservation contains rules common to cancelling and modifying
-	response = check_policy_to_cancel_reservation(reservation, user_cancelling_reservation)
+	response = check_policy_to_cancel_reservation(user_cancelling_reservation, reservation)
 
 	# The following rules apply only for proper cancellation, not for modification
 	# Staff must provide a reason when cancelling a reservation they do not own.
